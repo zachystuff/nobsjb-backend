@@ -19,6 +19,11 @@ function addData(req) {
         .catch(error => console.error(error))
 }
 
+async function addData2(req) {
+    const result = await jobsCollection.insertOne(req.body);
+    console.log(result);
+}
+
 function deleteJob(req) {
 
     jobsCollection.deleteOne(req.id)
