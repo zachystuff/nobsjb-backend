@@ -3,7 +3,6 @@ const { initializeApp } = require('firebase-admin/app');
 const express = require('express');
 const server = express();
 const bodyParser = require('body-parser');
-const PORT = 3000;
 const cors = require('cors');
 const mongo = require('./db');
 
@@ -26,7 +25,7 @@ server.use(cors());
 //        // Handle error
 //    });
 
-server.listen(PORT);
+server.listen(process.env.PORT);
 
 server.use(bodyParser.urlencoded({ extended: true }));
 
@@ -39,13 +38,13 @@ server.get('/favorites', (req, res) => {
 
 
 server.get('/find-jobs', (req, res) => {
-    let results = mongo.jobResults(req)
+    let results = mongo.jobDb.readJobListing(req)
     console.log(results);
     res.send(results);
 
 })
 
-server.get('/profile/:ID', (req, res) => {
+server.get('/profile', (req, res) => {
     //queries user and jobs, returns jobs based on user
     //if empty request return all jobs
     //else give body params
@@ -59,22 +58,23 @@ server.post('/create-job', (req, res) => {
     res.send('jobs done');
 })
 
-server.delete('/favorite/:ID', (req, res) => {
+server.delete('/favorite', (req, res) => {
+    const {id} = req.body;
     mongo.deleteJob(req)
     res.send('jobs gone from favorites');
 })
 
-server.put('/favorite/:ID', (req, res) => {
+server.put('/favorite', (req, res) => {
     //adds job ID to user favorites list in Mongo
     res.send('job added to favorites');
 })
 
-server.put('/apply/:ID', (req, res) => {
+server.put('/apply', (req, res) => {
     //adds job ID to user applied list in Mongo with epoch time that request was sent
     res.send('job added to applied list');
 })
 
-server.put('/ignore/:ID', (req, res) => {
+server.put('/ignore', (req, res) => {
     //adds job ID to user ignored list in Mongo
     //returns list of jobs minus jobs in the ignored list
     res.send('job ignored');
@@ -85,17 +85,17 @@ server.put('/profile', (req, res) => {
     res.send('user added');
 })
 
-server.put('/favorite/:ID', (req, res) => {
+server.put('/favorite', (req, res) => {
     //adds job ID to user favorites list in Mongo
     res.send('jobs replaced');
 })
 
-server.put('/apply/:ID', (req, res) => {
+server.put('/apply', (req, res) => {
     //adds job ID to user applied list in Mongo with epoch time that request was sent
     res.send('job added to applied list');
 })
 
-server.put('/ignore/:ID', (req, res) => {
+server.put('/ignore', (req, res) => {
     //adds job ID to user ignored list in Mongo
     //returns list of jobs minus jobs in the ignored list
 })
