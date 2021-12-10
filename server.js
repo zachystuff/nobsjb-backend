@@ -39,11 +39,10 @@ server.get('/favorites', (req, res) => {
 
 
 server.get('/find-jobs', (req, res) => {
-    //queries user and jobs, returns jobs based on user
-    //if empty request return all jobs
-    //else give body params
+    let results = mongo.jobResults(req)
+    console.log(results);
+    res.send(results);
 
-    res.send('found jobs');
 })
 
 server.get('/profile/:ID', (req, res) => {
