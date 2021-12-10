@@ -33,7 +33,8 @@ server.use(bodyParser.urlencoded({ extended: true }));
 server.get('/favorites', (req, res) => {
     console.log('get');
     //get from user, favorite IDs and return jobs with fav IDs
-    res.send('Hello World!');
+    res.send('got favorites');
+
 });
 
 
@@ -41,7 +42,16 @@ server.get('/find-jobs', (req, res) => {
     //queries user and jobs, returns jobs based on user
     //if empty request return all jobs
     //else give body params
-    res.send('jobs done');
+
+    res.send('found jobs');
+})
+
+server.get('/profile/:ID', (req, res) => {
+    //queries user and jobs, returns jobs based on user
+    //if empty request return all jobs
+    //else give body params
+    res.send('user returned');
+
 })
 
 server.post('/create-job', (req, res) => {
@@ -52,8 +62,28 @@ server.post('/create-job', (req, res) => {
 
 server.delete('/favorite/:ID', (req, res) => {
     mongo.deleteJob(req)
-        //deletes job ID from user favorites
-    res.send('jobs gone');
+    res.send('jobs gone from favorites');
+})
+
+server.put('/favorite/:ID', (req, res) => {
+    //adds job ID to user favorites list in Mongo
+    res.send('job added to favorites');
+})
+
+server.put('/apply/:ID', (req, res) => {
+    //adds job ID to user applied list in Mongo with epoch time that request was sent
+    res.send('job added to applied list');
+})
+
+server.put('/ignore/:ID', (req, res) => {
+    //adds job ID to user ignored list in Mongo
+    //returns list of jobs minus jobs in the ignored list
+    res.send('job ignored');
+})
+
+server.put('/profile', (req, res) => {
+    //adds user to Mongo with default app, fav, and ignore lists (IE: EMPTY LISTS)
+    res.send('user added');
 })
 
 server.put('/favorite/:ID', (req, res) => {
