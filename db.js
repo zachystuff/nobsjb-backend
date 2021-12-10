@@ -13,9 +13,9 @@ function initialize() {
 };
 
 const jobDb = {
-    
+
     addJobListing: (req) => {
-    
+
         jobsCollection.insertOne(req.body)
             .then(result => {
                 console.log(result);
@@ -28,18 +28,18 @@ const jobDb = {
         console.log(req.body);
         if (!Object.keys(req.body).length) {
             console.log('empty body request')
-            let result = await jobsCollection.find().toArray;
+            let result = await jobsCollection.find().toArray();
             console.log(result);
             return result;
         } else {
             console.log('full body request')
-            let result = await jobsCollection.find(req.body).toArray;
+            let result = await jobsCollection.find(req.body).toArray();
             return result;
         }
     },
 
     deleteJobListing: (req) => {
-    
+
         jobsCollection.deleteOne(req.id)
             .then(result => {
                 console.log(result);
