@@ -11,20 +11,20 @@ const mongo = require('./db');
 mongo.initialize();
 server.use(cors());
 
-initializeApp({
-    credential: applicationDefault(),
-    databaseURL: 'https://<DATABASE_NAME>.firebaseio.com'
-});
-
-getAuth()
-    .verifyIdToken(idToken)
-    .then((decodedToken) => {
-        const uid = decodedToken.uid;
-        // ...
-    })
-    .catch((error) => {
-        // Handle error
-    });
+//initializeApp({
+//    credential: applicationDefault(),
+//    databaseURL: 'https://<DATABASE_NAME>.firebaseio.com'
+//});
+//
+//getAuth()
+//    .verifyIdToken(idToken)
+//    .then((decodedToken) => {
+//        const uid = decodedToken.uid;
+//        // ...
+//    })
+//    .catch((error) => {
+//        // Handle error
+//    });
 
 server.listen(PORT);
 
