@@ -12,66 +12,90 @@ const userCollecton = client.db('NOBSJOBS').collection('users');
 
 const jobDb = {
 
-    addJobListing: async (req) => {
-        try {
-            if (Object.keys(req.body).length) {
-                let result = await jobsCollection.insertOne(req.body);
-                console.log(result);
+    addJobListing: (req) => {
+        client.connect(async err => {
+            if (err) return console.log(err);
+            console.log('connected to db user collection');
+            try {
+                if (Object.keys(req.body).length) {
+                    let result = await jobsCollection.insertOne(req.body);
+                    console.log(result);
+                }
+            } catch (error) {
+                console.log(error);
+            } finally {
+                client.close();
+                console.log('closed db connection');
             }
-        } catch (error) {
-            console.log(error);
-        }
+        });
     },
 
-    readJobListing: async (req) => {
+    readJobListing:  (req) => {
         //returns all jobs in the collection if req is empty
-        try {
-            console.log(req.body);
-            if (!Object.keys(req.body).length) {
-                console.log('empty body request')
-                let result = await jobsCollection.find().toArray();
-                console.log(result);
-                return result;
-            } else {
-                console.log('full body request')
-                let result = await jobsCollection.find(req.body).toArray();
-                return result;
+        client.connect(async err => {
+            if (err) return console.log(err);
+            console.log('connected to db user collection');
+            try {
+                console.log(req.body);
+                if (!Object.keys(req.body).length) {
+                    console.log('empty body request')
+                    let result = await jobsCollection.find().toArray();
+                    console.log(result);
+                    return result;
+                } else {
+                    console.log('full body request')
+                    let result = await jobsCollection.find(req.body).toArray();
+                    return result;
+                }
+            } catch (error) {
+                console.log(error);
+            } finally {
+                client.close();
+                console.log('closed db connection');
             }
-        } catch (error) {
-            console.log(error);
-        }
+        });
 
     },
 
-    deleteJobListing: async (req) => {
-        try {
-            let result = await jobsCollection.deleteOne(req.id);
-            return result;
-        } catch (error) {
-            console.log(error)
-        }
+    deleteJobListing: (req) => {
+        client.connect(async err => {
+            if (err) return console.log(err);
+            console.log('connected to db user collection');
+            try {
+                let result = await jobsCollection.deleteOne(req.id);
+                return result;
+            } catch (error) {
+                console.log(error)
+            } finally {
+                client.close();
+                console.log('closed db connection');
+            }
+        });
     }
 }
 
 const userDb = {
 
-    addUserProfile: async user => {
-        client.connect(err => {
+    addUserProfile: user => {
+        client.connect(async err => {
             if (err) return console.log(err);
+            console.log('connected to db user collection');
             try {
                 let result = await userCollecton.insertOne(user);
                 return result;
             } catch (error) {
                 console.log(error);
             } finally {
-                client.close()
+                client.close();
+                console.log('closed db connection');
             }
         });
     },
 
-    getUserProfile: async user => {
-        client.connect(err => {
+    getUserProfile: user => {
+        client.connect(async err => {
             if (err) return console.log(err);
+            console.log('connected to db user collection');
             try {
                 let result = await userCollecton.find({
                     userId: user
@@ -80,14 +104,16 @@ const userDb = {
             } catch (error) {
                 console.log(error);
             } finally {
-                client.close()
+                client.close();
+                console.log('closed db connection');
             }
         })
     },
 
-    updateUserProfile: async user => {
-        client.connect(err => {
+    updateUserProfile: user => {
+        client.connect(async err => {
             if (err) return console.log(err);
+            console.log('connected to db user collection');
             try {
                 let result = await userCollecton.insertOne({
                     userId: user
@@ -96,14 +122,16 @@ const userDb = {
             } catch (error) {
                 console.log(error);
             } finally {
-                client.close()
+                client.close();
+                console.log('closed db connection');
             }
         })
     },
 
-    deleteUserProfile: async user => {
-        client.connect(err => {
+    deleteUserProfile: user => {
+        client.connect(async err => {
             if (err) return console.log(err);
+            console.log('connected to db user collection');
             try {
                 let result = await userCollecton.deleteOne({
                     userId: user
@@ -112,7 +140,8 @@ const userDb = {
             } catch (error) {
                 console.log(error);
             } finally {
-                client.close()
+                client.close();
+                console.log('closed db connection');
             }
         })
     }
@@ -121,7 +150,6 @@ const userDb = {
 
 
 module.exports = {
-    initialize,
     jobDb,
     userDb
 };
