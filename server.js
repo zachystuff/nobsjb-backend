@@ -32,10 +32,6 @@ server.use(morgan('tiny'));
 server.use(async function(req, res, next) {
     //rerieve token from front end
     const { idToken } = req.body;
-    console.log("firebase middleware");
-    console.log(idToken);
-    console.log(idToken.toString());
-
     try {
         const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
         req.body.idToken = verifiedToken.uid;
@@ -53,6 +49,30 @@ server.use(async function(req, res, next) {
  *
  */
 
+server.get('/favorites', async(req, res) => {
+
+    res.send('got favorites');
+});
+
+
+server.get('/find-jobs', (req, res) => {
+    //if empty request return all jobs
+    //else give body params
+    let results = mongo.jobDb.readJobListing(req)
+    console.log(results);
+    res.send(results);
+
+})
+
+
+
+server.post('/create-job', (req, res) => {
+
+    //const {}
+    mongo.jobDb.addJobListing(req)
+        //creates job based on form inputs post validation
+    res.send('jobs done');
+})
 
 /*
  *
@@ -60,23 +80,8 @@ server.use(async function(req, res, next) {
  *
  */
 
-
-server.get('/favorites', async(req, res) => {
-    console.log('get');
-    res.send('got favorites');
-});
-
-
-server.get('/find-jobs', (req, res) => {
-    let results = mongo.jobDb.readJobListing(req)
-    console.log(results);
-    res.send(results);
-
-})
-
 server.get('/profile', (req, res) => {
-    //if empty request return all jobs
-    //else give body params
+
     const {
         salary
     } = req.body;
@@ -84,75 +89,63 @@ server.get('/profile', (req, res) => {
 
 })
 
-server.post('/create-job', (req, res) => {
-    mongo.jobDb.addJobListing(req)
-        //creates job based on form inputs post validation
-    res.send('jobs done');
-})
-
-server.post('/create-user', (req, res) => {
+server.post('/create-user', async(req, res) => {
+    const { idToken, salary } = req.body;
+    let newSalary = parseFloat(salary);
+    if (typeof newSalary != "number" && newSalary < 0) {
+        res.send("Salary must be a number greater than 0.")
+        return;
+    }
     console.log("/create user function");
     const userObj = {
-        ingnored: [],
+        ignored: [],
         favorites: [],
         applied: [],
-        desiredsalary: 100000,
-        email
+        desiredsalary: newSalary,
+        idToken: idToken
     }
-    const dbResponse = mongo.userDb.addUserProfile(userObj);
-    console.log(dbResponse);
-    res.sendStatus(200);
+    try {
+        await mongo.userDb.addUserProfile(userObj);
+        res.sendStatus(200);
+    } catch (err) {
+        res.sendStatus(500);
+        return console.error(err);
+    }
 })
 
 server.delete('/favorite', (req, res) => {
-    const {
-        id
-    } = req.body;
-    mongo.deleteJob(req)
+    const { idToken, jobId } = req.body;
+    mongo.userDb.deleteUserDataFromCollection(idToken, { "favorites": jobId });
     res.send('jobs gone from favorites');
 })
 
-server.put('/favorite', (req, res) => {
-    console.log(req.body);
-    //adds job ID to user favorites list in Mongo
-    res.send('job added to favorites');
-})
-
-server.put('/apply', (req, res) => {
-    //adds job ID to user applied list in Mongo with epoch time that request was sent
-    res.send('job added to applied list');
-})
-
-server.put('/ignore', (req, res) => {
-    //adds job ID to user ignored list in Mongo
-    //returns list of jobs minus jobs in the ignored list
-    res.send('job ignored');
-})
 
 server.put('/profile', (req, res) => {
-    //adds user to Mongo with default app, fav, and ignore lists (IE: EMPTY LISTS)
+    let user;
+    mongo.userDb.updateUserProfile(user)
+        //updates user in mongo
     res.send('user added');
 })
 
 server.put('/favorite', (req, res) => {
+    const { idToken, jobID } = req.body;
     //adds job ID to user favorites list in Mongo
     res.send('jobs replaced');
 })
 
 server.put('/apply', (req, res) => {
+    const { idToken, jobID } = req.body;
+    //const time;
     //adds job ID to user applied list in Mongo with epoch time that request was sent
     res.send('job added to applied list');
 })
 
 server.put('/ignore', (req, res) => {
+    const { idToken, jobID } = req.body;
     //adds job ID to user ignored list in Mongo
     //returns list of jobs minus jobs in the ignored list
 })
 
-server.put('/profile', (req, res) => {
-    //adds user to Mongo with default app, fav, and ignore lists (IE: EMPTY LISTS)
-    res.send('jobs replaced');
-})
 
 server.listen(process.env.PORT, () => {
     console.log("Server is listening on port " + process.env.PORT);
