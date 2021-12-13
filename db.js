@@ -21,7 +21,7 @@ const jobDb = {
                     console.log(result);
                 }
             } catch (error) {
-                throw new Error(error);
+                return new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
@@ -47,7 +47,7 @@ const jobDb = {
                     return result;
                 }
             } catch (error) {
-                throw new Error(error);
+                return new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
@@ -64,7 +64,7 @@ const jobDb = {
                 let result = await jobsCollection.deleteOne(jobId);
                 return result;
             } catch (error) {
-                throw new Error(error);
+                return new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
@@ -81,11 +81,12 @@ const userDb = {
             console.log('connected to db user collection');
             try {
                 let result = await userCollecton.insertOne(user).toArray();
+                console.log(result);
                 return result;
             } catch (error) {
-                throw new Error(error);
+                return new Error(error);
             } finally {
-                client.close();
+                // client.close();
                 console.log('closed db connection');
             }
         });
@@ -101,7 +102,7 @@ const userDb = {
                 }).toArray();
                 return result;
             } catch (error) {
-                throw new Error(error);
+                return new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
@@ -109,21 +110,25 @@ const userDb = {
         })
     },
 
-    updateUserProfile: user => {
+    updateUserProfile: (idToken, payload) => {
         client.connect(async err => {
             if (err) return console.log(err);
             console.log('connected to db user collection');
             try {
                 let result = await userCollecton.findOneAndUpdate(
                     //filter
-                    { idToken: user.idToken },
+                    {
+                        idToken
+                    },
                     //update
                     {
-                        $push: {...user.payload }
+                        $push: {
+                            ...payload
+                        }
                     });
                 return result;
             } catch (error) {
-                throw new Error(error);
+                return new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
@@ -131,20 +136,30 @@ const userDb = {
         })
     },
 
-    deleteUserDataFromCollection: (idToken, data) => {
+    deleteUserDataFromCollection: (idToken, payload) => {
         client.connect(async err => {
             if (err) return console.log(err);
             console.log('connected to db user collection');
             try {
-                let result = await jobsCollection.deleteOne({ idToken }, { $pull: {...data } }).toArray();
+                let result = await userCollecton.findOneAndUpdate(
+                    //filter
+                    {
+                        idToken
+                    },
+                    //update
+                    {
+                        $pull: {
+                            ...payload
+                        }
+                    });
                 return result;
             } catch (error) {
-                throw new Error(error);
+                return new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
             }
-        });
+        })
     },
 
     deleteUserProfile: user => {
@@ -157,7 +172,7 @@ const userDb = {
                 }).toArray();
                 return result;
             } catch (error) {
-                throw new Error(error);
+                return new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
