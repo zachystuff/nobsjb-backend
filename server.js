@@ -1,39 +1,65 @@
 const dotenv = require('dotenv').config();
-const { initializeApp } = require('firebase-admin/app');
 const express = require('express');
+const firebase = require('firebase-admin');
 const server = express();
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const mongo = require('./db');
+const morgan = require('morgan');
+const serviceAccount = require('./firebaselogin.json');
 
+firebase.initializeApp({
+    credential: firebase.credential.cert(serviceAccount)
+});
 
-mongo.initialize();
 server.use(cors());
+server.use(express.json());
+server.use(bodyParser.urlencoded({
+    extended: true
+}));
+server.use(cookieParser());
+// request logger
+server.use(morgan('tiny'));
 
-//initializeApp({
-//    credential: applicationDefault(),
-//    databaseURL: 'https://<DATABASE_NAME>.firebaseio.com'
-//});
-//
-//getAuth()
-//    .verifyIdToken(idToken)
-//    .then((decodedToken) => {
-//        const uid = decodedToken.uid;
-//        // ...
-//    })
-//    .catch((error) => {
-//        // Handle error
-//    });
+/*
+ *
+ * FIREBASE MIDDLEWARE
+ *
+ */
 
-server.listen(process.env.PORT);
 
-server.use(bodyParser.urlencoded({ extended: true }));
+server.use(function (req, res, next) {
+    //rerieve token from front end
+    const idToken = req.body.idToken.toString();
+    try {
+        const verifiedToken = await firebase.auth().verifyIdToken(idToken);
+        req.body.idToken = verifiedToken.uid;
+        next();
+    } catch (err) {
+        console.error(err.stack)
+        res.status(500).send('Something broke!')
+    }
+})
 
-server.get('/favorites', (req, res) => {
+
+/*
+ *
+ * JOB COLLECTION ROUTES
+ *
+ */
+
+
+/*
+ *
+ * USER COLLECTION ROUTES
+ *
+ */
+
+
+server.get('/favorites', async (req, res) => {
     console.log('get');
-    //get from user, favorite IDs and return jobs with fav IDs
     res.send('got favorites');
-
 });
 
 
@@ -45,21 +71,39 @@ server.get('/find-jobs', (req, res) => {
 })
 
 server.get('/profile', (req, res) => {
-    //queries user and jobs, returns jobs based on user
     //if empty request return all jobs
     //else give body params
+    const {
+        salary
+    } = req.body;
     res.send('user returned');
 
 })
 
 server.post('/create-job', (req, res) => {
-    mongo.addData(req)
-        //creates job based on form inputs post validation
+    mongo.jobDb.addJobListing(req)
+    //creates job based on form inputs post validation
     res.send('jobs done');
 })
 
+server.post('/create-user', (req, res) => {
+    console.log("/create user function");
+    const userObj = {
+        ingnored: [],
+        favorites: [],
+        applied: [],
+        desiredsalary: 100000,
+        email
+    }
+    const dbResponse = mongo.userDb.addUserProfile(userObj);
+    console.log(dbResponse);
+    res.sendStatus(200);
+})
+
 server.delete('/favorite', (req, res) => {
-    const {id} = req.body;
+    const {
+        id
+    } = req.body;
     mongo.deleteJob(req)
     res.send('jobs gone from favorites');
 })
@@ -104,3 +148,7 @@ server.put('/profile', (req, res) => {
     //adds user to Mongo with default app, fav, and ignore lists (IE: EMPTY LISTS)
     res.send('jobs replaced');
 })
+
+server.listen(process.env.PORT, () => {
+    console.log("Server is listening on port " + process.env.PORT);
+});
