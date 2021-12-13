@@ -29,16 +29,20 @@ server.use(morgan('tiny'));
  */
 
 
-server.use(function (req, res, next) {
+server.use(async function(req, res, next) {
     //rerieve token from front end
-    const idToken = req.body.idToken.toString();
+    const { idToken } = req.body;
+    console.log("firebase middleware");
+    console.log(idToken);
+    console.log(idToken.toString());
+
     try {
-        const verifiedToken = await firebase.auth().verifyIdToken(idToken);
+        const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
         req.body.idToken = verifiedToken.uid;
         next();
     } catch (err) {
         console.error(err.stack)
-        res.status(500).send('Something broke!')
+        res.status(500).send('unable to verify user (because of Michael and Zach)')
     }
 })
 
@@ -57,7 +61,7 @@ server.use(function (req, res, next) {
  */
 
 
-server.get('/favorites', async (req, res) => {
+server.get('/favorites', async(req, res) => {
     console.log('get');
     res.send('got favorites');
 });
@@ -82,7 +86,7 @@ server.get('/profile', (req, res) => {
 
 server.post('/create-job', (req, res) => {
     mongo.jobDb.addJobListing(req)
-    //creates job based on form inputs post validation
+        //creates job based on form inputs post validation
     res.send('jobs done');
 })
 
@@ -109,6 +113,7 @@ server.delete('/favorite', (req, res) => {
 })
 
 server.put('/favorite', (req, res) => {
+    console.log(req.body);
     //adds job ID to user favorites list in Mongo
     res.send('job added to favorites');
 })
