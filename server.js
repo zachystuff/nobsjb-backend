@@ -86,24 +86,39 @@ server.get('/favorites', firebaseMiddleware, async(req, res) => {
 server.post('/find-jobs', async(req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
     const { location, title, jobId } = req.body;
+    let search;
     if (location && title) {
-        const search = {
+        search = {
             "$and": [
                 { location },
                 { title }
             ]
         }
-
-        try {
-            console.log(search);
-            let results = await mongo.jobDb.readJobListing(search);
-            return res.send(results);
-        } catch (err) {
-            console.error(err);
-            return res.sendStatus(500);
+    } else if (jobId) {
+        search = { "_id": mongo.ObjectId(jobId) }
+    } else if (location && !title) {
+        search = {
+            "$and": [
+                { location }
+            ]
+        }
+    } else if (!location && title) {
+        search = {
+            "$and": [
+                { title }
+            ]
         }
     }
+    try {
+        console.log(search);
+        let results = await mongo.jobDb.readJobListing(search);
+        return res.send(results);
+    } catch (err) {
+        console.error(err);
+        return res.sendStatus(500);
+    }
 });
+
 
 
 
