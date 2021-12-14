@@ -9,18 +9,17 @@ const client = new MongoClient(connectionString, {
 const jobsCollection = client.db('NOBSJOBS').collection('jobs');
 const userCollecton = client.db('NOBSJOBS').collection('users');
 
-async function connect() {
-    try {
-        await client.connect();
-        console.log("Connected correctly to server");
-    } catch (e) {
-        console.error(e);
-    } finally {
-        await client.close();
+const connection = {
+
+    connect: async() => {
+        try {
+            await client.connect();
+            console.log("Connected correctly to server");
+        } catch (e) {
+            console.error(e);
+        }
     }
 }
-
-connect();
 
 const jobDb = {
 
@@ -31,9 +30,6 @@ const jobDb = {
             return result;
         } catch (error) {
             throw new Error(error);
-        } finally {
-            client.close();
-            console.log('closed db connection');
         }
 
     },
@@ -55,8 +51,6 @@ const jobDb = {
             }
         } catch (error) {
             throw new Error(error);
-        } finally {
-            console.log('closed db connection');
         }
 
     },
@@ -69,11 +63,7 @@ const jobDb = {
             return result;
         } catch (error) {
             throw new Error(error);
-        } finally {
-            client.close();
-            console.log('closed db connection');
         }
-
     }
 }
 
@@ -82,13 +72,10 @@ const userDb = {
     addUserProfile: async user => {
         console.log('connected to db user collection');
         try {
-            let result = await userCollecton.insertOne(user).toArray();
+            let result = await userCollecton.insertOne(user);
             return result;
         } catch (error) {
             throw new Error(error);
-        } finally {
-            client.close();
-            console.log('closed db connection');
         }
     },
 
@@ -101,9 +88,6 @@ const userDb = {
             return result;
         } catch (error) {
             throw new Error(error);
-        } finally {
-            client.close();
-            console.log('closed db connection');
         }
 
     },
@@ -121,9 +105,6 @@ const userDb = {
             return result;
         } catch (error) {
             throw new Error(error);
-        } finally {
-            client.close();
-            console.log('closed db connection');
         }
 
     },
@@ -146,9 +127,6 @@ const userDb = {
             return result;
         } catch (error) {
             throw new Error(error);
-        } finally {
-            client.close();
-            console.log('closed db connection');
         }
 
     },
@@ -156,15 +134,11 @@ const userDb = {
     deleteUserDataFromCollection: async(idToken, data) => {
         console.log('connected to db user collection');
         try {
-            let result = await jobsCollection.updateOne({ idToken }, { $pull: { data } });
+            let result = await jobsCollection.updateOne({ idToken }, { $pull: {...data } });
             return result;
         } catch (error) {
             throw new Error(error);
-        } finally {
-            client.close();
-            console.log('closed db connection');
         }
-
     },
 
     deleteUserProfile: async user => {
@@ -176,9 +150,6 @@ const userDb = {
             return result;
         } catch (error) {
             throw new Error(error);
-        } finally {
-            client.close();
-            console.log('closed db connection');
         }
 
     }
@@ -188,5 +159,6 @@ const userDb = {
 
 module.exports = {
     jobDb,
-    userDb
+    userDb,
+    connection
 };
