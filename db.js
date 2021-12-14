@@ -80,14 +80,14 @@ const userDb = {
     },
 
     getUserProfile: async user => {
-        console.log('connected to db user collection');
+        console.log('connected to db user collection');        
         try {
             let result = await userCollecton.find({
                 idToken: user
             }).toArray();
             return result;
         } catch (error) {
-            throw new Error(error);
+            throw new Error(error);        
         }
 
     },

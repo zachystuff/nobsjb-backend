@@ -29,18 +29,35 @@ server.set('view engine', 'ejs');
  *
  */
 
-const skipAuth = function(path) {
-    return function(req, res, next) {
+const firebaseMiddleware = async (req, res, next) => {
+    // retrieve token from front end
+    console.log('Middle');
+    const {
+        idToken
+    } = req.body;
+    try {
+        const verifiedToken = (await firebase.auth().verifyIdToken(idToken)).toString();
+        req.body.idToken = verifiedToken.uid;
+        next();
+    } catch (error) {
+        console.error(error.stack);
+        res.status(500).send('unable to verify user (because of Michael and Zach)');
+    }
+    console.log('Performed middleware');
+}
+
+const skipAuth = function (path) {
+    return function (req, res, next) {
         if (path === req.path && !req.body.idToken) {
             return next();
         } else {
-            server.use(async function(req, res, next) {
+            server.use(async function (req, res, next) {
                 // retrieve token from front end
                 const {
                     idToken
                 } = req.body;
                 try {
-                    const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
+                    const verifiedToken = (await firebase.auth().verifyIdToken(idToken)).toString();
                     req.body.idToken = verifiedToken.uid;
                     next();
                 } catch (error) {
@@ -52,7 +69,7 @@ const skipAuth = function(path) {
     }
 }
 
-server.use(skipAuth('/find-jobs'));
+// server.use(skipAuth('/find-jobs'));
 mongo.connection.connect();
 /*
  *
@@ -60,7 +77,7 @@ mongo.connection.connect();
  *
  */
 
-server.get('/favorites', async(req, res) => {
+server.get('/favorites', async (req, res) => {
     const { idToken } = req.body;
     if (idToken) {
         try {
@@ -78,7 +95,7 @@ server.get('/favorites', async(req, res) => {
 });
 
 
-server.get('/find-jobs', async(req, res) => {
+server.get('/find-jobs', async (req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
     if (Object.keys(req.body).length !== 0) {
         const { location, title } = req.body;
@@ -114,7 +131,7 @@ server.get('/find-jobs', async(req, res) => {
 
 
 
-server.post('/create-job', async(req, res) => {
+server.post('/create-job', async (req, res) => {
     const { title, company, type, benefits, salary, qualifications, description, location } = req.body;
 
     if (!title && !company && !type && !benefits && !salary && !qualifications && !description && !location) {
@@ -178,7 +195,8 @@ server.post('/create-job', async(req, res) => {
  *
  */
 
-server.post('/create-user', async(req, res) => {
+server.post('/create-user', firebaseMiddleware, async (req, res) => {
+    console.log('Hello world');
     const {
         idToken,
         salary
@@ -188,6 +206,18 @@ server.post('/create-user', async(req, res) => {
         res.send("Salary must be a number greater than 0.")
         return;
     }
+
+    // First check if the user exists
+    let existingUser = await mongo.userDb.getUserProfile(idToken);
+    console.log(existingUser);
+    if (existingUser) {
+        console.log('User exists already - avoiding duplicate insertion')
+        return;
+    } else {
+        console.log('THe user did not exist')
+    }
+
+
     console.log("/create user function");
     const userObj = {
         ignored: [],
@@ -206,7 +236,7 @@ server.post('/create-user', async(req, res) => {
     }
 });
 
-server.delete('/favorite', async(req, res) => {
+server.delete('/favorite', async (req, res) => {
     const {
         idToken,
         jobId
@@ -226,7 +256,7 @@ server.delete('/favorite', async(req, res) => {
     }
 });
 
-server.delete('/ignore', async(req, res) => {
+server.delete('/ignore', async (req, res) => {
     const {
         idToken,
         jobId
@@ -250,7 +280,7 @@ server.delete('/ignore', async(req, res) => {
 
 // update profile
 //added some crap
-server.put('/profile', async(req, res) => {
+server.put('/profile', async (req, res) => {
     const {
         idToken,
         salary
@@ -278,7 +308,7 @@ server.put('/profile', async(req, res) => {
     }
 });
 
-server.put('/favorite', async(req, res) => {
+server.put('/favorite', async (req, res) => {
     const {
         idToken,
         jobId
@@ -298,7 +328,7 @@ server.put('/favorite', async(req, res) => {
     }
 });
 
-server.put('/apply', async(req, res) => {
+server.put('/apply', async (req, res) => {
     const {
         idToken,
         jobId
@@ -322,7 +352,7 @@ server.put('/apply', async(req, res) => {
     }
 });
 
-server.put('/ignore', async(req, res) => {
+server.put('/ignore', async (req, res) => {
     const {
         idToken,
         jobId
