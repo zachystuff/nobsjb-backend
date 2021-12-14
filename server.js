@@ -63,7 +63,7 @@ server.get('/favorites', firebaseMiddleware, async(req, res) => {
             const results = await mongo.userDb.getUserProfile(idToken);
             console.log("results: " + results[0].favorites);
             if (results) {
-                const favoriteResults = results[0]['favorites'].forEach(async element => {
+                favoriteResults = await results[0].favorites.forEach(async element => {
                     console.log("element: " + element);
                     return await mongo.jobDb.readJobListing({ "_id": mongo.ObjectId(element) })
                 });
@@ -85,9 +85,8 @@ server.get('/favorites', firebaseMiddleware, async(req, res) => {
 
 server.post('/find-jobs', async(req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
-    if (Object.keys(req.body).length !== 0) {
-        console.log("search params found");
-        const { location, title } = req.body;
+    const { location, title, jobId } = req.body;
+    if (location && title) {
         const search = {
             "$and": [
                 { location },
@@ -103,18 +102,7 @@ server.post('/find-jobs', async(req, res) => {
             console.error(err);
             return res.sendStatus(500);
         }
-    } else {
-
-        try {
-            let results = await mongo.jobDb.readJobListing();
-            res.send(results);
-
-        } catch (err) {
-            res.sendStatus(500);
-            return console.error(err);
-        }
     }
-
 });
 
 
