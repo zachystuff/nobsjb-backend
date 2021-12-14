@@ -29,6 +29,7 @@ server.set('view engine', 'ejs');
  *
  */
 
+
 const firebaseMiddleware = async (req, res, next) => {
     // retrieve token from front end
     console.log('Middle');
@@ -44,29 +45,6 @@ const firebaseMiddleware = async (req, res, next) => {
         res.status(500).send('unable to verify user (because of Michael and Zach)');
     }
     console.log('Performed middleware');
-}
-
-const skipAuth = function (path) {
-    return function (req, res, next) {
-        if (path === req.path && !req.body.idToken) {
-            return next();
-        } else {
-            server.use(async function (req, res, next) {
-                // retrieve token from front end
-                const {
-                    idToken
-                } = req.body;
-                try {
-                    const verifiedToken = (await firebase.auth().verifyIdToken(idToken)).toString();
-                    req.body.idToken = verifiedToken.uid;
-                    next();
-                } catch (error) {
-                    console.error(error.stack);
-                    res.status(500).send('unable to verify user (because of Michael and Zach)');
-                }
-            })
-        }
-    }
 }
 
 // server.use(skipAuth('/find-jobs'));
@@ -98,6 +76,7 @@ server.get('/favorites', firebaseMiddleware, async (req, res) => {
 server.get('/find-jobs', async (req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
     if (Object.keys(req.body).length !== 0) {
+        console.log("search params found");
         const { location, title } = req.body;
         const search = {
             "$and": [
@@ -118,7 +97,6 @@ server.get('/find-jobs', async (req, res) => {
 
         try {
             let results = await mongo.jobDb.readJobListing();
-            console.log(results + "more bullshit");
             res.send(results);
 
         } catch (err) {
