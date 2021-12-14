@@ -1,3 +1,4 @@
+const { LongWithoutOverridesClass } = require('bson');
 const {
     MongoClient
 } = require('mongodb');
@@ -16,10 +17,8 @@ const jobDb = {
             if (err) return console.log(err);
             console.log('connected to db user collection');
             try {
-                if (newJob.length > 0) {
-                    let result = await jobsCollection.insertOne(newJob);
-                    console.log(result);
-                }
+                let result = await jobsCollection.insertOne(newJob);
+                return result;
             } catch (error) {
                 throw new Error(error);
             } finally {
@@ -29,27 +28,26 @@ const jobDb = {
         });
     },
 
-    readJobListing: (req) => {
+    readJobListing: async(list) => {
         //returns all jobs in the collection if req is empty
         client.connect(async err => {
             if (err) return console.log(err);
             console.log('connected to db user collection');
             try {
-                console.log(req.body);
-                if (!Object.keys(req.body).length) {
-                    console.log('empty body request')
+                if (!list) {
+                    console.log('empty search parameter')
                     let result = await jobsCollection.find().toArray();
                     console.log(result);
                     return result;
                 } else {
                     console.log('full body request')
-                    let result = await jobsCollection.find(req.body).toArray();
+                    let result = await jobsCollection.find(list).toArray();
+                    console.log(result);
                     return result;
                 }
             } catch (error) {
                 throw new Error(error);
             } finally {
-                client.close();
                 console.log('closed db connection');
             }
         });

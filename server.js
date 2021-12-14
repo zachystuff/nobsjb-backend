@@ -8,6 +8,7 @@ const cors = require('cors');
 const mongo = require('./db');
 const morgan = require('morgan');
 const serviceAccount = require('./firebaselogin.json');
+const { app } = require('firebase-admin');
 
 firebase.initializeApp({
     credential: firebase.credential.cert(serviceAccount)
@@ -28,22 +29,30 @@ server.use(morgan('tiny'));
  *
  */
 
-
-server.use(async function(req, res, next) {
-    //rerieve token from front end
-    const {
-        idToken
-    } = req.body;
-    try {
-        const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
-        req.body.idToken = verifiedToken.uid;
-        next();
-    } catch (err) {
-        console.error(err.stack);
-        res.status(500).send('unable to verify user (because of Michael and Zach)');
+const skipAuth = function(path) {
+    return function(req, res, next) {
+        if (path === req.path && !req.body.idToken) {
+            return next();
+        } else {
+            server.use(async function(req, res, next) {
+                //rerieve token from front end
+                const {
+                    idToken
+                } = req.body;
+                try {
+                    const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
+                    req.body.idToken = verifiedToken.uid;
+                    next();
+                } catch (err) {
+                    console.error(err.stack);
+                    res.status(500).send('unable to verify user (because of Michael and Zach)');
+                }
+            })
+        }
     }
-});
+}
 
+server.use(skipAuth('/find-jobs'));
 
 /*
  *
@@ -69,47 +78,100 @@ server.get('/favorites', async(req, res) => {
 });
 
 
-server.get('/find-jobs', (req, res) => {
+server.get('/find-jobs', async(req, res) => {
 
-    //needs more work on db.js
-    const { location, title } = req.body;
-    if (location.length > 0 && title.length > 0) {
+    //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
+    if (Object.keys(req.body).length !== 0) {
+        const { location, title } = req.body;
+        const search = {
+            "$and": [
+                { "$elemMatch": { location } },
+                { "$elemMatch": { title } }
+            ]
+        }
+
         try {
-            let results = mongo.jobDb.readJobListing(location, title);
-            console.log(results);
+            console.log(search);
+            let results = await mongo.jobDb.readJobListing(search);
             res.send(results);
         } catch (err) {
             res.sendStatus(500);
             return console.error(err);
         }
-    } else {
-        res.sendStatus(400);
+    } //else {
+    try {
+        mongo.jobDb.readJobListing()
+            .then(results => {
+                res.json(results);
+            })
+
+    } catch (err) {
+        res.sendStatus(500);
+        return console.error(err);
     }
+    //}
+
 });
 
 
 
 server.post('/create-job', (req, res) => {
-    const { title, company, type, benefits, salary, qualitications, description, location } = req.body;
+    const { title, company, type, benefits, salary, qualifications, description, location } = req.body;
+
+    if (!title && !company && !type && !benefits && !salary && !qualifications && !description && !location) {
+        res.end("Missing required variables")
+        return;
+    }
+
+    if (typeof title != 'string'
+
+        &&
+        typeof company != 'string'
+
+        &&
+        typeof location != 'string'
+
+        &&
+        typeof type != 'string'
+
+        &&
+        typeof benefits != 'string'
+
+        &&
+        typeof salary != 'string'
+
+        &&
+        typeof qualifications != 'string'
+
+        &&
+        typeof description != 'string') {
+        res.end("All variables need to be in string format");
+    }
+    const newSalary = parseFloat(salary);
     const newJob = {
         title: title,
         company: company,
         type: type,
         benefits: benefits,
-        salary: salary,
-        qualitications: qualitications,
+        salary: newSalary,
+        qualifications: qualifications,
         description: description,
         location: location
     }
+
     try {
         mongo.jobDb.addJobListing(newJob);
         //creates job based on form inputs post validation
-        res.send('jobs done');
+        res.send(JSON.stringify({
+            "status": "success"
+        }));
     } catch (err) {
         res.sendStatus(500);
         return console.error(err);
     }
 });
+
+
 
 /*
  *
