@@ -189,7 +189,8 @@ server.post('/create-user', firebaseMiddleware, async (req, res) => {
 
         // First check if the user exists
         let existingUser = await mongo.userDb.getUserProfile(idToken);
-        if (existingUser) {
+        console.log("existing user: " + existingUser);
+        if (existingUser.length > 0) {
             console.log('User exists already - avoiding duplicate insertion')
             return;
         } else {
