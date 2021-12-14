@@ -92,7 +92,6 @@ server.post('/find-jobs', async (req, res) => {
         }
 
         try {
-            console.log(search);
             let results = await mongo.jobDb.readJobListing(search);
             return res.send(results);
         } catch (err) {

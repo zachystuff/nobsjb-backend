@@ -41,12 +41,10 @@ const jobDb = {
             if (!list) {
                 console.log('empty search parameter')
                 let result = await jobsCollection.find().toArray();
-                console.log(result);
                 return result;
             } else {
                 console.log('full body request')
                 let result = await jobsCollection.find(list).toArray();
-                console.log(result);
                 return result;
             }
         } catch (error) {
