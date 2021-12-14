@@ -181,11 +181,12 @@ server.post('/create-user', firebaseMiddleware, async (req, res) => {
             idToken,
             salary
         } = req.body;
-        let newSalary = parseFloat(salary);
-        if (typeof newSalary != "number" && newSalary < 0) {
-            res.send("Salary must be a number greater than 0.")
-            return;
-        }
+        console.log("req body check: " + req.body);
+        // let newSalary = parseFloat(salary);
+        // if ( salary < 0) {
+        //     res.send("Salary must be a number greater than 0.")
+        //     return;
+        // }
 
         // First check if the user exists
         let existingUser = await mongo.userDb.getUserProfile(idToken);
@@ -202,7 +203,7 @@ server.post('/create-user', firebaseMiddleware, async (req, res) => {
             ignored: [],
             favorites: [],
             applied: [],
-            desiredsalary: newSalary,
+            desiredsalary: 50000,
             idToken: idToken
         }
 
