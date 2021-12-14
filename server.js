@@ -21,6 +21,7 @@ server.use(bodyParser.urlencoded({
 server.use(cookieParser());
 // request logger
 server.use(morgan('tiny'));
+server.set('view engine', 'ejs');
 
 /*
  *
@@ -28,53 +29,148 @@ server.use(morgan('tiny'));
  *
  */
 
-
-server.use(async function (req, res, next) {
-    //rerieve token from front end
-    const {
-        idToken
-    } = req.body;
-    try {
-        const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
-        req.body.idToken = verifiedToken.uid;
-        next();
-    } catch (err) {
-        console.error(err.stack);
-        res.status(500).send('unable to verify user (because of Michael and Zach)');
+const skipAuth = function(path) {
+    return function(req, res, next) {
+        if (path === req.path && !req.body.idToken) {
+            return next();
+        } else {
+            server.use(async function(req, res, next) {
+                // retrieve token from front end
+                const {
+                    idToken
+                } = req.body;
+                try {
+                    const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
+                    req.body.idToken = verifiedToken.uid;
+                    next();
+                } catch (error) {
+                    console.error(error.stack);
+                    res.status(500).send('unable to verify user (because of Michael and Zach)');
+                }
+            })
+        }
     }
-});
+}
 
-
+server.use(skipAuth('/find-jobs'));
+mongo.connection.connect();
 /*
  *
  * JOB COLLECTION ROUTES
  *
  */
 
-server.get('/favorites', async (req, res) => {
-
-    res.send('got favorites');
+server.get('/favorites', async(req, res) => {
+    const { idToken } = req.body;
+    if (idToken) {
+        try {
+            const { favorites } = mongo.userDb.getUserProfile(idToken);
+            const favoritesResults = mongo.jobDb.readJobListing({ "$and": [{ favorites }] });
+            res.send('got favorites');
+            return favoritesResults;
+        } catch (err) {
+            res.send(500);
+            console.error(err);
+        }
+    } else {
+        res.sendStatus(400);
+    }
 });
 
 
-server.get('/find-jobs', (req, res) => {
-    //if empty request return all jobs
-    //else give body params
-    let results = mongo.jobDb.readJobListing(req)
-    console.log(results);
-    res.send(results);
+server.get('/find-jobs', async(req, res) => {
+    //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
+    if (Object.keys(req.body).length !== 0) {
+        const { location, title } = req.body;
+        const search = {
+            "$and": [
+                { "$elemMatch": { location } },
+                { "$elemMatch": { title } }
+            ]
+        }
+
+        try {
+            console.log(search);
+            let results = await mongo.jobDb.readJobListing(search);
+            return res.send(results);
+        } catch (err) {
+            console.error(err);
+            return res.sendStatus(500);
+        }
+    } else {
+
+        try {
+            let results = await mongo.jobDb.readJobListing();
+            console.log(results + "more bullshit");
+            res.send(results);
+
+        } catch (err) {
+            res.sendStatus(500);
+            return console.error(err);
+        }
+    }
 
 });
 
 
 
-server.post('/create-job', (req, res) => {
+server.post('/create-job', async(req, res) => {
+    const { title, company, type, benefits, salary, qualifications, description, location } = req.body;
 
-//const {}
-    mongo.jobDb.addJobListing(req)    
-    //creates job based on form inputs post validation
-    res.send('jobs done');
+    if (!title && !company && !type && !benefits && !salary && !qualifications && !description && !location) {
+        res.end("Missing required variables")
+        return;
+    }
+
+    if (typeof title != 'string'
+
+        &&
+        typeof company != 'string'
+
+        &&
+        typeof location != 'string'
+
+        &&
+        typeof type != 'string'
+
+        &&
+        typeof benefits != 'string'
+
+        &&
+        typeof salary != 'string'
+
+        &&
+        typeof qualifications != 'string'
+
+        &&
+        typeof description != 'string') {
+        res.end("All variables need to be in string format");
+    }
+    const newSalary = parseFloat(salary);
+    const newJob = {
+        title: title,
+        company: company,
+        type: type,
+        benefits: benefits,
+        salary: newSalary,
+        qualifications: qualifications,
+        description: description,
+        location: location
+    }
+
+    try {
+        await mongo.jobDb.addJobListing(newJob);
+        //creates job based on form inputs post validation
+        res.send(JSON.stringify({
+            "status": "success"
+        }));
+    } catch (err) {
+        res.sendStatus(500);
+        return console.error(err);
+    }
 });
+
+
 
 /*
  *
@@ -82,7 +178,7 @@ server.post('/create-job', (req, res) => {
  *
  */
 
-server.post('/create-user', (req, res) => {
+server.post('/create-user', async(req, res) => {
     const {
         idToken,
         salary
@@ -101,7 +197,7 @@ server.post('/create-user', (req, res) => {
         idToken: idToken
     }
     try {
-        let result = mongo.userDb.addUserProfile(userObj);
+        let result = await mongo.userDb.addUserProfile(userObj);
         console.log(result);
         res.sendStatus(200);
     } catch (err) {
@@ -110,15 +206,16 @@ server.post('/create-user', (req, res) => {
     }
 });
 
-server.delete('/favorite', (req, res) => {    
+server.delete('/favorite', async(req, res) => {
     const {
         idToken,
         jobId
     } = req.body;
+    console.log("req.body is parsed");
     //adds job ID to user favorites list in Mongo
     if (jobId) {
         try {
-            mongo.userDb.deleteUserDataFromCollection(idToken, { "favorites": jobId });
+            await mongo.userDb.deleteUserDataFromCollection(idToken, { "favorites": jobId });
             res.send('jobs gone from favorites');
 
         } catch (err) {
@@ -129,7 +226,7 @@ server.delete('/favorite', (req, res) => {
     }
 });
 
-server.delete('/ignore', (req, res) => {
+server.delete('/ignore', async(req, res) => {
     const {
         idToken,
         jobId
@@ -137,7 +234,7 @@ server.delete('/ignore', (req, res) => {
     //adds job ID to user favorites list in Mongo
     if (jobId) {
         try {
-            mongo.userDb.deleteUserDataFromCollection(idToken, {"ignored": jobId});
+            await mongo.userDb.deleteUserDataFromCollection(idToken, { "ignored": jobId });
             //adds job ID to user favorites list in Mongo
             res.send('ignored updated');
 
@@ -152,7 +249,8 @@ server.delete('/ignore', (req, res) => {
 
 
 // update profile
-server.put('/profile', (req, res) => {
+//added some crap
+server.put('/profile', async(req, res) => {
     const {
         idToken,
         salary
@@ -166,7 +264,7 @@ server.put('/profile', (req, res) => {
     }
     if (newSalary) {
         try {
-            mongo.userDb.updateUserProfile(idToken, { "desiredsalary" : newSalary });
+            await mongo.userDb.updateUserProfile(idToken, { "desiredsalary": newSalary });
             res.send(JSON.stringify({
                 'status': 'success'
             }));
@@ -180,7 +278,7 @@ server.put('/profile', (req, res) => {
     }
 });
 
-server.put('/favorite', (req, res) => {
+server.put('/favorite', async(req, res) => {
     const {
         idToken,
         jobId
@@ -188,7 +286,7 @@ server.put('/favorite', (req, res) => {
     //adds job ID to user favorites list in Mongo
     if (jobId) {
         try {
-            mongo.userDb.updateUserProfileArray(idToken, {"favorites": jobId});
+            await mongo.userDb.updateUserProfileArray(idToken, { "favorites": jobId });
             //adds job ID to user favorites list in Mongo
             res.send('jobs replaced');
 
@@ -200,7 +298,7 @@ server.put('/favorite', (req, res) => {
     }
 });
 
-server.put('/apply', (req, res) => {
+server.put('/apply', async(req, res) => {
     const {
         idToken,
         jobId
@@ -212,7 +310,7 @@ server.put('/apply', (req, res) => {
     }
     if (jobId) {
         try {
-            mongo.userDb.updateUserProfileArray(idToken, {"applied": applyObj});
+            await mongo.userDb.updateUserProfileArray(idToken, { "applied": applyObj });
             //adds job ID to user favorites list in Mongo
             res.send('applied to ' + jobId + ' on ' + applyObj.dateAdded);
 
@@ -224,7 +322,7 @@ server.put('/apply', (req, res) => {
     }
 });
 
-server.put('/ignore', (req, res) => {
+server.put('/ignore', async(req, res) => {
     const {
         idToken,
         jobId
@@ -232,7 +330,7 @@ server.put('/ignore', (req, res) => {
     //adds job ID to user favorites list in Mongo
     if (jobId) {
         try {
-            mongo.userDb.updateUserProfileArray(idToken, {"ignored": jobId});
+            await mongo.userDb.updateUserProfileArray(idToken, { "ignored": jobId });
             //adds job ID to user favorites list in Mongo
             res.send('ignored updated');
 
