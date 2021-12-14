@@ -84,7 +84,7 @@ const userDb = {
                 console.log(result);
                 return result;
             } catch (error) {
-                return new Error(error);
+                throw new Error(error);
             } finally {
                 // client.close();
                 console.log('closed db connection');
@@ -102,7 +102,33 @@ const userDb = {
                 }).toArray();
                 return result;
             } catch (error) {
-                return new Error(error);
+                throw new Error(error);
+            } finally {
+                client.close();
+                console.log('closed db connection');
+            }
+        })
+    },
+
+    updateUserProfileArray: (idToken, payload) => {
+        client.connect(async err => {
+            if (err) return console.log(err);
+            console.log('connected to db user collection');
+            try {
+                let result = await userCollecton.findOneAndUpdate(
+                    //filter
+                    {
+                        idToken
+                    },
+                    //update
+                    {
+                        $push: {
+                            ...payload
+                        }
+                    });
+                return result;
+            } catch (error) {
+                throw new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
@@ -122,13 +148,14 @@ const userDb = {
                     },
                     //update
                     {
-                        $push: {
+                        $set: {
                             ...payload
                         }
-                    });
+                    }
+                );
                 return result;
             } catch (error) {
-                return new Error(error);
+                throw new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
@@ -154,7 +181,7 @@ const userDb = {
                     });
                 return result;
             } catch (error) {
-                return new Error(error);
+                throw new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
@@ -172,7 +199,7 @@ const userDb = {
                 }).toArray();
                 return result;
             } catch (error) {
-                return new Error(error);
+                throw new Error(error);
             } finally {
                 client.close();
                 console.log('closed db connection');
