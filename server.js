@@ -33,9 +33,9 @@ server.set('view engine', 'ejs');
 const firebaseMiddleware = async(req, res, next) => {
     // retrieve token from front end
     console.log('Middle');
-    const {
-        idToken
-    } = req.body;
+    const idToken = req.headers['authorization'].split(" ")[1];
+    
+
     try {
         const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
         req.body.idToken = verifiedToken.uid;
