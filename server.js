@@ -117,15 +117,6 @@ server.post('/create-job', (req, res) => {
  *
  */
 
-server.get('/profile', (req, res) => {
-
-    const {
-        salary
-    } = req.body;
-    res.send('user returned');
-
-});
-
 server.post('/create-user', (req, res) => {
     const {
         idToken,
@@ -173,12 +164,55 @@ server.delete('/favorite', (req, res) => {
     }
 });
 
+server.delete('/ignore', (req, res) => {
+    const {
+        idToken,
+        jobId
+    } = req.body;
+    //adds job ID to user favorites list in Mongo
+    if (jobId) {
+        try {
+            mongo.userDb.deleteUserDataFromCollection(idToken, { "ignored": jobId });
+            //adds job ID to user favorites list in Mongo
+            res.send('ignored updated');
 
+        } catch (err) {
+            console.log(err);
+        }
+    } else {
+        res.sendStatus(400);
+    }
+});
+
+
+
+// update profile
 server.put('/profile', (req, res) => {
-    let user;
-    mongo.userDb.updateUserProfile(user)
-        //updates user in mongo
-    res.send('user added');
+    const {
+        idToken,
+        salary
+    } = req.body;
+    //adds job ID to user favorites list in Mongo
+    let newSalary = parseFloat(salary);
+    console.log(newSalary);
+    if (typeof newSalary != "number" && newSalary < 0) {
+        res.send("Salary must be a number greater than 0");
+        return;
+    }
+    if (newSalary) {
+        try {
+            mongo.userDb.updateUserProfile(idToken, { "desiredsalary": newSalary });
+            res.send(JSON.stringify({
+                'status': 'success'
+            }));
+
+        } catch (err) {
+            console.log(err);
+            res.sendStatus(400);
+        }
+    } else {
+        res.sendStatus(400);
+    }
 });
 
 server.put('/favorite', (req, res) => {
@@ -189,7 +223,7 @@ server.put('/favorite', (req, res) => {
     //adds job ID to user favorites list in Mongo
     if (jobId) {
         try {
-            mongo.userDb.updateUserProfile(idToken, { "favorites": jobId });
+            mongo.userDb.updateUserProfileArray(idToken, { "favorites": jobId });
             //adds job ID to user favorites list in Mongo
             res.send('jobs replaced');
 
@@ -213,7 +247,7 @@ server.put('/apply', (req, res) => {
     }
     if (jobId) {
         try {
-            mongo.userDb.updateUserProfile(idToken, { "applied": applyObj });
+            mongo.userDb.updateUserProfileArray(idToken, { "applied": applyObj });
             //adds job ID to user favorites list in Mongo
             res.send('applied to ' + jobId + ' on ' + applyObj.dateAdded);
 
@@ -233,7 +267,7 @@ server.put('/ignore', (req, res) => {
     //adds job ID to user favorites list in Mongo
     if (jobId) {
         try {
-            mongo.userDb.updateUserProfile(idToken, { "ignored": jobId });
+            mongo.userDb.updateUserProfileArray(idToken, { "ignored": jobId });
             //adds job ID to user favorites list in Mongo
             res.send('ignored updated');
 

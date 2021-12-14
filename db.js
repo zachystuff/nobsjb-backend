@@ -109,7 +109,7 @@ const userDb = {
         })
     },
 
-    updateUserProfile: user => {
+    updateUserProfileArray: (idToken, payload) => {
         client.connect(async err => {
             if (err) return console.log(err);
             console.log('connected to db user collection');
@@ -121,6 +121,33 @@ const userDb = {
                     {
                         $push: {...payload }
                     });
+                return result;
+            } catch (error) {
+                throw new Error(error);
+            } finally {
+                client.close();
+                console.log('closed db connection');
+            }
+        })
+    },
+
+    updateUserProfile: (idToken, payload) => {
+        client.connect(async err => {
+            if (err) return console.log(err);
+            console.log('connected to db user collection');
+            try {
+                let result = await userCollecton.findOneAndUpdate(
+                    //filter
+                    {
+                        idToken
+                    },
+                    //update
+                    {
+                        $set: {
+                            ...payload
+                        }
+                    }
+                );
                 return result;
             } catch (error) {
                 throw new Error(error);
