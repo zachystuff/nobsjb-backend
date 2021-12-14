@@ -46,7 +46,7 @@ const jobDb = {
                 return result;
             } else {
                 console.log('full body request')
-                let result = await jobsCollection.find(list).toArray();
+                let result = await jobsCollection.find([list]).toArray();
                 console.log("result from mongo: " + result);
                 return result;
             }

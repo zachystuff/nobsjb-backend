@@ -63,12 +63,10 @@ server.get('/favorites', firebaseMiddleware, async(req, res) => {
             const results = await mongo.userDb.getUserProfile(idToken);
             console.log("results: " + results[0].favorites);
             if (results) {
-                favoriteResults = await results[0].favorites.forEach(async element => {
-                    console.log("element: " + element);
-                    return await mongo.jobDb.readJobListing({ "_id": mongo.ObjectId(element) })
+                let favoriteResults = results[0].favorites.map(async element => {
+                    return mongo.jobDb.readJobListing({ "_id": mongo.ObjectId(element) })
                 });
                 res.send('got favorites');
-                console.log("favorite results are: " + favoriteResults);
                 return res.send(favoriteResults);
             } else {
                 res.sendStatus(500);
@@ -97,17 +95,10 @@ server.post('/find-jobs', async(req, res) => {
     } else if (jobId) {
         search = { "_id": mongo.ObjectId(jobId) }
     } else if (location && !title) {
-        search = {
-            "$and": [
-                { location }
-            ]
-        }
+        search = { location: location }
+
     } else if (!location && title) {
-        search = {
-            "$and": [
-                { title }
-            ]
-        }
+        search = { title: title }
     }
     try {
         console.log(search);
