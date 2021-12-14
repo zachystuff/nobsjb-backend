@@ -85,7 +85,6 @@ const userDb = {
             let result = userCollecton.find({
                 idToken: user
             });
-            console.log(`Result from line 88 was ${result}`);
             return result;
         } catch (error) {
             throw new Error(error);

@@ -77,7 +77,7 @@ mongo.connection.connect();
  *
  */
 
-server.get('/favorites', async (req, res) => {
+server.get('/favorites', firebaseMiddleware, async (req, res) => {
     const { idToken } = req.body;
     if (idToken) {
         try {
@@ -131,7 +131,7 @@ server.get('/find-jobs', async (req, res) => {
 
 
 
-server.post('/create-job', async (req, res) => {
+server.post('/create-job', firebaseMiddleware, async (req, res) => {
     const { title, company, type, benefits, salary, qualifications, description, location } = req.body;
 
     if (!title && !company && !type && !benefits && !salary && !qualifications && !description && !location) {
@@ -196,7 +196,6 @@ server.post('/create-job', async (req, res) => {
  */
 
 server.post('/create-user', firebaseMiddleware, async (req, res) => {
-    console.log('Hello world');
     const {
         idToken,
         salary
@@ -209,14 +208,12 @@ server.post('/create-user', firebaseMiddleware, async (req, res) => {
 
     // First check if the user exists
     let existingUser = await mongo.userDb.getUserProfile(idToken);
-    console.log(existingUser);
     if (existingUser) {
         console.log('User exists already - avoiding duplicate insertion')
         return;
     } else {
         console.log('THe user did not exist')
     }
-
 
     console.log("/create user function");
     const userObj = {
@@ -236,7 +233,7 @@ server.post('/create-user', firebaseMiddleware, async (req, res) => {
     }
 });
 
-server.delete('/favorite', async (req, res) => {
+server.delete('/favorite', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
@@ -256,7 +253,7 @@ server.delete('/favorite', async (req, res) => {
     }
 });
 
-server.delete('/ignore', async (req, res) => {
+server.delete('/ignore', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
@@ -280,7 +277,7 @@ server.delete('/ignore', async (req, res) => {
 
 // update profile
 //added some crap
-server.put('/profile', async (req, res) => {
+server.put('/profile', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         salary
@@ -308,7 +305,7 @@ server.put('/profile', async (req, res) => {
     }
 });
 
-server.put('/favorite', async (req, res) => {
+server.put('/favorite', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
@@ -328,7 +325,7 @@ server.put('/favorite', async (req, res) => {
     }
 });
 
-server.put('/apply', async (req, res) => {
+server.put('/apply', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
@@ -352,7 +349,7 @@ server.put('/apply', async (req, res) => {
     }
 });
 
-server.put('/ignore', async (req, res) => {
+server.put('/ignore', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
