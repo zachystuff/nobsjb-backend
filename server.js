@@ -32,8 +32,9 @@ server.set('view engine', 'ejs');
 
 const firebaseMiddleware = async (req, res, next) => {
     try {
-        // retrieve token from front end
-        console.log('Middle');
+        if (req.path === '/find-jobs') {
+            next();
+        }
         const idToken = req.headers['authorization'].split(" ")[1];
         const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
         req.body.idToken = verifiedToken.uid;
