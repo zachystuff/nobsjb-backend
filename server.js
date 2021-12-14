@@ -77,8 +77,10 @@ server.get('/favorites', firebaseMiddleware, async (req, res) => {
 });
 
 
-server.get('/find-jobs', async (req, res) => {
+server.post('/find-jobs', async (req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
+    console.log(req.body);
+
     if (Object.keys(req.body).length !== 0) {
         console.log("search params found");
         const { location, title } = req.body;
