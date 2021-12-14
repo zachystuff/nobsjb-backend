@@ -79,7 +79,7 @@ server.post('/find-jobs', async (req, res) => {
         let { location, title } = req.body;
         let results;
         if (location && title) {
-            console.log('Would search with keywords');
+            console.log('Searching with keywords');
             const search = {
                 "$and": [
                     { location },
@@ -88,7 +88,7 @@ server.post('/find-jobs', async (req, res) => {
             }
             results = await mongo.jobDb.readJobListing(search);
         } else {
-            console.log('Would search withOUT keywords');
+            console.log('Searching without keywords');
             results = await mongo.jobDb.readJobListing();
         }
         res.send(results);
