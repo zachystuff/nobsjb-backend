@@ -32,6 +32,8 @@ server.set('view engine', 'ejs');
 const firebaseMiddleware = async (req, res, next) => {
 
     try {
+        console.log(`Headers: ${req.headers['authorization']}`);
+        console.log(`Body: ${req.body}`);
         const idToken = req.headers['authorization'].split(" ")[1];
         const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
         req.body.idToken = verifiedToken.uid;
@@ -177,7 +179,7 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
 
 server.post('/create-user', firebaseMiddleware, async (req, res) => {
     try {
-        const {  idToken } = req.body;
+        const { idToken } = req.body;
 
         // First check if the user exists
         let existingUser = await mongo.userDb.getUserProfile(idToken);
