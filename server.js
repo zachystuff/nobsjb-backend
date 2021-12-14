@@ -67,8 +67,11 @@ server.get('/favorites', firebaseMiddleware, async(req, res) => {
                     return mongo.jobDb.readJobListing({ "_id": mongo.ObjectId(element) })
                 });
                 const resolvedFaves = await Promise.all(favoriteResults);
-                console.log(resolvedFaves);
-                return res.send(resolvedFaves);
+                let finalResult = [];
+                resolvedFaves.map(favArr => {
+                    finalResult.push(...favArr)
+                })
+                return res.send(finalResult);
             } else {
                 res.sendStatus(500);
             }
