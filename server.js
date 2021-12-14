@@ -81,7 +81,7 @@ server.get('/favorites', firebaseMiddleware, async (req, res) => {
     }
 });
 
-server.post('/find-jobs', async(req, res) => {
+server.post('/find-jobs', async (req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
     const { location, title, jobId } = req.body;
     let search;
@@ -177,20 +177,10 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
 
 server.post('/create-user', firebaseMiddleware, async (req, res) => {
     try {
-        const {
-            idToken,
-            salary
-        } = req.body;
-        console.log("req body check: " + req.body);
-        // let newSalary = parseFloat(salary);
-        // if ( salary < 0) {
-        //     res.send("Salary must be a number greater than 0.")
-        //     return;
-        // }
+        const {  idToken } = req.body;
 
         // First check if the user exists
         let existingUser = await mongo.userDb.getUserProfile(idToken);
-        console.log("existing user: " + existingUser);
         if (existingUser.length > 0) {
             console.log('User exists already - avoiding duplicate insertion')
             return;
@@ -198,7 +188,6 @@ server.post('/create-user', firebaseMiddleware, async (req, res) => {
             console.log('THe user did not exist')
         }
 
-        console.log("/create user function");
         const userObj = {
             ignored: [],
             favorites: [],
