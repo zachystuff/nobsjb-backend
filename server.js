@@ -249,6 +249,7 @@ server.delete('/ignore', async(req, res) => {
 
 
 // update profile
+//added some crap
 server.put('/profile', async(req, res) => {
     const {
         idToken,
