@@ -30,6 +30,7 @@ server.set('view engine', 'ejs');
  */
 
 const skipAuth = function(path) {
+    console.log("skip auth is causing problems :)")
     return function(req, res, next) {
         if (path === req.path && !req.body.idToken) {
             return next();
@@ -40,7 +41,7 @@ const skipAuth = function(path) {
                     idToken
                 } = req.body;
                 try {
-                    const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
+                    const verifiedToken = await firebase.auth().verifyIdToken(idToken).toString();
                     req.body.idToken = verifiedToken.uid;
                     next();
                 } catch (error) {
@@ -79,8 +80,10 @@ server.get('/favorites', async(req, res) => {
 
 
 server.get('/find-jobs', async(req, res) => {
+    console.log("search request received");
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
     if (Object.keys(req.body).length !== 0) {
+        console.log("search params found");
         const { location, title } = req.body;
         const search = {
             "$and": [
@@ -101,7 +104,6 @@ server.get('/find-jobs', async(req, res) => {
 
         try {
             let results = await mongo.jobDb.readJobListing();
-            console.log(results + "more bullshit");
             res.send(results);
 
         } catch (err) {
