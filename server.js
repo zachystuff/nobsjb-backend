@@ -34,7 +34,7 @@ const firebaseMiddleware = async(req, res, next) => {
     // retrieve token from front end
     console.log('Middle');
     const idToken = req.headers['authorization'].split(" ")[1];
-    
+
 
     try {
         const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
@@ -60,12 +60,16 @@ server.get('/favorites', firebaseMiddleware, async(req, res) => {
     if (idToken) {
         try {
             console.log(idToken);
-            const result = (await mongo.userDb.getUserProfile(idToken)).toArray;
-            console.log(result);
-            if (result) {
-                const favoritesResults = mongo.jobDb.readJobListing({ "$and": [result] });
+            const results = await mongo.userDb.getUserProfile(idToken);
+            console.log("results: " + results[0].favorites);
+            if (results) {
+                const favoriteResults = results[0]['favorites'].forEach(async element => {
+                    console.log("element: " + element);
+                    return await mongo.jobDb.readJobListing({ "_id": mongo.ObjectId(element) })
+                });
                 res.send('got favorites');
-                return favoritesResults;
+                console.log("favorite results are: " + favoriteResults);
+                return res.send(favoriteResults);
             } else {
                 res.sendStatus(500);
             }
@@ -79,7 +83,7 @@ server.get('/favorites', firebaseMiddleware, async(req, res) => {
 });
 
 
-server.get('/find-jobs', async(req, res) => {
+server.post('/find-jobs', async(req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
     if (Object.keys(req.body).length !== 0) {
         console.log("search params found");
