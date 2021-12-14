@@ -112,9 +112,9 @@ server.post('/find-jobs', async(req, res) => {
 
 
 server.post('/create-job', firebaseMiddleware, async (req, res) => {
-    const { title, company, type, benefits, salary, qualifications, description, location } = req.body;
+    const { title, companyname, type, benefits, salary, qualifications, description, location } = req.body;
 
-    if (!title && !company && !type && !benefits && !salary && !qualifications && !description && !location) {
+    if (!title && !companyname && !type && !benefits && !salary && !qualifications && !description && !location) {
         res.end("Missing required variables")
         return;
     }
@@ -122,7 +122,7 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
     if (typeof title != 'string'
 
         &&
-        typeof company != 'string'
+        typeof companyname != 'string'
 
         &&
         typeof location != 'string'
@@ -145,14 +145,14 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
     }
     const newSalary = parseFloat(salary);
     const newJob = {
-        title: title,
-        company: company,
-        type: type,
-        benefits: benefits,
-        salary: newSalary,
-        qualifications: qualifications,
-        description: description,
-        location: location
+        title,
+        companyname,
+        type,
+        benefits,
+        salary,
+        qualifications,
+        description,
+        location
     }
 
     try {
