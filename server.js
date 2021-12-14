@@ -58,7 +58,6 @@ server.get('/favorites', firebaseMiddleware, async (req, res) => {
     const { idToken } = req.body;
     if (idToken) {
         try {
-            console.log(idToken);
             const result = (await mongo.userDb.getUserProfile(idToken)).toArray;
             console.log(result);
             if (result) {
