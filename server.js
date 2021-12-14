@@ -8,7 +8,6 @@ const cors = require('cors');
 const mongo = require('./db');
 const morgan = require('morgan');
 const serviceAccount = require('./firebaselogin.json');
-const { app } = require('firebase-admin');
 
 firebase.initializeApp({
     credential: firebase.credential.cert(serviceAccount)
@@ -22,6 +21,7 @@ server.use(bodyParser.urlencoded({
 server.use(cookieParser());
 // request logger
 server.use(morgan('tiny'));
+server.set('view engine', 'ejs');
 
 /*
  *
@@ -43,8 +43,8 @@ const skipAuth = function(path) {
                     const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
                     req.body.idToken = verifiedToken.uid;
                     next();
-                } catch (err) {
-                    console.error(err.stack);
+                } catch (error) {
+                    console.error(error.stack);
                     res.status(500).send('unable to verify user (because of Michael and Zach)');
                 }
             })
@@ -79,7 +79,6 @@ server.get('/favorites', async(req, res) => {
 
 
 server.get('/find-jobs', async(req, res) => {
-
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
     if (Object.keys(req.body).length !== 0) {
         const { location, title } = req.body;
@@ -93,17 +92,17 @@ server.get('/find-jobs', async(req, res) => {
         try {
             console.log(search);
             let results = await mongo.jobDb.readJobListing(search);
-            res.send(results);
+            return res.send(results);
         } catch (err) {
-            res.sendStatus(500);
-            return console.error(err);
+            console.error(err);
+            return res.sendStatus(500);
         }
     } //else {
+
     try {
-        mongo.jobDb.readJobListing()
-            .then(results => {
-                res.json(results);
-            })
+        let results = await mongo.jobDb.readJobListing();
+        console.log(results + "more bullshit");
+        res.send(results);
 
     } catch (err) {
         res.sendStatus(500);
