@@ -1,5 +1,6 @@
 const {
-    MongoClient
+    MongoClient,
+    ObjectId
 } = require('mongodb');
 const connectionString = process.env.MONGO_CONNECTION_STRING;
 const client = new MongoClient(connectionString, {
@@ -11,7 +12,7 @@ const userCollecton = client.db('NOBSJOBS').collection('users');
 
 const connection = {
 
-    connect: async () => {
+    connect: async() => {
         try {
             await client.connect();
             console.log("Connected correctly to server");
@@ -23,7 +24,7 @@ const connection = {
 
 const jobDb = {
 
-    addJobListing: async (newJob) => {
+    addJobListing: async(newJob) => {
         console.log('connected to db user collection');
         try {
             let result = await jobsCollection.insertOne(newJob);
@@ -34,19 +35,17 @@ const jobDb = {
 
     },
 
-    readJobListing: async (list) => {
+    readJobListing: async(list) => {
         //returns all jobs in the collection if req is empty
         console.log('connected to db user collection');
         try {
             if (!list) {
                 console.log('empty search parameter')
                 let result = await jobsCollection.find().toArray();
-                console.log(result);
                 return result;
             } else {
                 console.log('full body request')
                 let result = await jobsCollection.find(list).toArray();
-                console.log(result);
                 return result;
             }
         } catch (error) {
@@ -55,7 +54,7 @@ const jobDb = {
 
     },
 
-    deleteJobListing: async (jobId) => {
+    deleteJobListing: async(jobId) => {
 
         console.log('connected to db user collection');
         try {
@@ -82,9 +81,10 @@ const userDb = {
     getUserProfile: async user => {
         console.log('connected to db user collection');
         try {
-            let result = userCollecton.find({
+            let result = await userCollecton.find({
                 idToken: user
-            });
+            }).toArray();
+            console.log(result);
             return result;
         } catch (error) {
             throw new Error(error);
@@ -92,7 +92,7 @@ const userDb = {
 
     },
 
-    updateUserProfileArray: async (idToken, payload) => {
+    updateUserProfileArray: async(idToken, payload) => {
         console.log('connected to db user collection');
         try {
             let result = await userCollecton.updateOne(
@@ -100,7 +100,7 @@ const userDb = {
                 { idToken: user.idToken },
                 //update
                 {
-                    $push: { ...payload }
+                    $push: {...payload }
                 });
             return result;
         } catch (error) {
@@ -109,7 +109,7 @@ const userDb = {
 
     },
 
-    updateUserProfile: async (idToken, payload) => {
+    updateUserProfile: async(idToken, payload) => {
         console.log('connected to db user collection');
         try {
             let result = await userCollecton.findOneAndUpdate(
@@ -131,10 +131,10 @@ const userDb = {
 
     },
 
-    deleteUserDataFromCollection: async (idToken, data) => {
+    deleteUserDataFromCollection: async(idToken, data) => {
         console.log('connected to db user collection');
         try {
-            let result = await jobsCollection.updateOne({ idToken }, { $pull: { ...data } });
+            let result = await jobsCollection.updateOne({ idToken }, { $pull: {...data } });
             return result;
         } catch (error) {
             throw new Error(error);
@@ -160,5 +160,6 @@ const userDb = {
 module.exports = {
     jobDb,
     userDb,
-    connection
+    connection,
+    ObjectId
 };

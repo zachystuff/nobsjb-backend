@@ -29,22 +29,18 @@ server.set('view engine', 'ejs');
  *
  */
 
-
-const firebaseMiddleware = async(req, res, next) => {
-    // retrieve token from front end
-    console.log('Middle');
-    const idToken = req.headers['authorization'].split(" ")[1];
-    
+const firebaseMiddleware = async (req, res, next) => {
 
     try {
+        const idToken = req.headers['authorization'].split(" ")[1];
         const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
         req.body.idToken = verifiedToken.uid;
         next();
-    } catch (error) {
-        console.error(error.stack);
+        console.log('Performed middleware');
+    } catch (e) {
+        console.log('Middleware failed: ' + e);
         res.status(500).send('unable to verify user (because of Michael and Zach)');
     }
-    console.log('Performed middleware');
 }
 
 // server.use(skipAuth('/find-jobs'));
@@ -55,17 +51,24 @@ mongo.connection.connect();
  *
  */
 
-server.get('/favorites', firebaseMiddleware, async(req, res) => {
+server.get('/favorites', firebaseMiddleware, async (req, res) => {
     const { idToken } = req.body;
     if (idToken) {
         try {
             console.log(idToken);
-            const result = (await mongo.userDb.getUserProfile(idToken)).toArray;
-            console.log(result);
-            if (result) {
-                const favoritesResults = mongo.jobDb.readJobListing({ "$and": [result] });
-                res.send('got favorites');
-                return favoritesResults;
+            const results = await mongo.userDb.getUserProfile(idToken);
+            console.log("results: " + results[0].favorites);
+            if (results) {
+                let favoriteResults = results[0].favorites.map(async element => {
+                    return mongo.jobDb.readJobListing({ "_id": mongo.ObjectId(element) })
+                });
+                const resolvedFaves = await Promise.all(favoriteResults);
+                let finalResult = [];
+                resolvedFaves.map(favArr => {
+                    finalResult.push(...favArr)
+                })
+                return res.send(finalResult);
+
             } else {
                 res.sendStatus(500);
             }
@@ -78,44 +81,37 @@ server.get('/favorites', firebaseMiddleware, async(req, res) => {
     }
 });
 
-
-server.get('/find-jobs', async(req, res) => {
+server.post('/find-jobs', async(req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
-    if (Object.keys(req.body).length !== 0) {
-        console.log("search params found");
-        const { location, title } = req.body;
-        const search = {
+    const { location, title, jobId } = req.body;
+    let search;
+    if (location && title) {
+        search = {
             "$and": [
                 { location },
                 { title }
             ]
         }
+    } else if (jobId) {
+        search = { "_id": mongo.ObjectId(jobId) }
+    } else if (location && !title) {
+        search = { location: location }
 
-        try {
-            console.log(search);
-            let results = await mongo.jobDb.readJobListing(search);
-            return res.send(results);
-        } catch (err) {
-            console.error(err);
-            return res.sendStatus(500);
-        }
-    } else {
-
-        try {
-            let results = await mongo.jobDb.readJobListing();
-            res.send(results);
-
-        } catch (err) {
-            res.sendStatus(500);
-            return console.error(err);
-        }
+    } else if (!location && title) {
+        search = { title: title }
     }
-
+    try {
+        console.log(search);
+        let results = await mongo.jobDb.readJobListing(search);
+        return res.send(results);
+    } catch (err) {
+        console.error(err);
+        return res.sendStatus(500);
+    }
 });
 
 
-
-server.post('/create-job', firebaseMiddleware, async(req, res) => {
+server.post('/create-job', firebaseMiddleware, async (req, res) => {
     const { title, company, type, benefits, salary, qualifications, description, location } = req.body;
 
     if (!title && !company && !type && !benefits && !salary && !qualifications && !description && !location) {
@@ -179,45 +175,48 @@ server.post('/create-job', firebaseMiddleware, async(req, res) => {
  *
  */
 
-server.post('/create-user', firebaseMiddleware, async(req, res) => {
-    const {
-        idToken,
-        salary
-    } = req.body;
-    let newSalary = parseFloat(salary);
-    if (typeof newSalary != "number" && newSalary < 0) {
-        res.send("Salary must be a number greater than 0.")
-        return;
-    }
-
-    // First check if the user exists
-    let existingUser = await mongo.userDb.getUserProfile(idToken);
-    if (existingUser) {
-        console.log('User exists already - avoiding duplicate insertion')
-        return;
-    } else {
-        console.log('THe user did not exist')
-    }
-
-    console.log("/create user function");
-    const userObj = {
-        ignored: [],
-        favorites: [],
-        applied: [],
-        desiredsalary: newSalary,
-        idToken: idToken
-    }
+server.post('/create-user', firebaseMiddleware, async (req, res) => {
     try {
+        const {
+            idToken,
+            salary
+        } = req.body;
+        let newSalary = parseFloat(salary);
+        if (typeof newSalary != "number" && newSalary < 0) {
+            res.send("Salary must be a number greater than 0.")
+            return;
+        }
+
+        // First check if the user exists
+        let existingUser = await mongo.userDb.getUserProfile(idToken);
+        if (existingUser) {
+            console.log('User exists already - avoiding duplicate insertion')
+            return;
+        } else {
+            console.log('THe user did not exist')
+        }
+
+        console.log("/create user function");
+        const userObj = {
+            ignored: [],
+            favorites: [],
+            applied: [],
+            desiredsalary: newSalary,
+            idToken: idToken
+        }
+
         let result = await mongo.userDb.addUserProfile(userObj);
         console.log(result);
         res.sendStatus(200);
-    } catch (err) {
+
+
+    } catch (e) {
+        console.log('An error occurred in /create-user' + e);
         res.sendStatus(500);
-        return console.error(err);
     }
 });
 
-server.delete('/favorite', firebaseMiddleware, async(req, res) => {
+server.delete('/favorite', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
@@ -237,7 +236,7 @@ server.delete('/favorite', firebaseMiddleware, async(req, res) => {
     }
 });
 
-server.delete('/ignore', firebaseMiddleware, async(req, res) => {
+server.delete('/ignore', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
@@ -261,7 +260,7 @@ server.delete('/ignore', firebaseMiddleware, async(req, res) => {
 
 // update profile
 //added some crap
-server.put('/profile', firebaseMiddleware, async(req, res) => {
+server.put('/profile', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         salary
@@ -289,7 +288,7 @@ server.put('/profile', firebaseMiddleware, async(req, res) => {
     }
 });
 
-server.put('/favorite', firebaseMiddleware, async(req, res) => {
+server.put('/favorite', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
@@ -309,7 +308,7 @@ server.put('/favorite', firebaseMiddleware, async(req, res) => {
     }
 });
 
-server.put('/apply', firebaseMiddleware, async(req, res) => {
+server.put('/apply', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
@@ -333,7 +332,7 @@ server.put('/apply', firebaseMiddleware, async(req, res) => {
     }
 });
 
-server.put('/ignore', firebaseMiddleware, async(req, res) => {
+server.put('/ignore', firebaseMiddleware, async (req, res) => {
     const {
         idToken,
         jobId
