@@ -116,47 +116,11 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
         const { title, companyname, type, benefits, salary, qualifications, description, location } = req.body;
         const vars = [title, companyname, type, benefits, salary, qualifications, description, location];
 
-        // let i = 0;
-        // for (const val of vars) {
-        //     if (!val) {
-        //         res.status(400);
-        //         res.send(`Variable ${i} is missing`);
-        //         return;
-        //     }
+        for (let i = 0; i < vars.length; i++) {
+            let val = vars[i];
+            console.log(val)
+        }
 
-        //     if (typeof val !== 'string') {
-        //         res.status(400);
-        //         res.send(`Variable ${i} should be a string`);
-        //         return;
-        //     }
-        //     i++;
-        // }
-
-        // if (title && companyname && type && benefits && salary && qualifications && description && location) {
-        //     if (typeof title != 'string'
-
-        //         &&
-        //         typeof companyname != 'string'
-
-        //         &&
-        //         typeof location != 'string'
-
-        //         &&
-        //         typeof type != 'string'
-
-        //         &&
-        //         typeof benefits != 'string'
-
-        //         &&
-        //         typeof salary != 'string'
-
-        //         &&
-        //         typeof qualifications != 'string'
-
-        //         &&
-        //         typeof description != 'string') {
-        //         res.end("All variables need to be in string format");
-        //     }
         const newSalary = parseFloat(salary);
         const newJob = {
             title,
@@ -168,7 +132,7 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
             description,
             location
         }
-        
+
         await mongo.jobDb.addJobListing(newJob);
         //creates job based on form inputs post validation
         res.send(JSON.stringify({ "status": "success" }));
