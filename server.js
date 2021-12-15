@@ -32,8 +32,6 @@ server.set('view engine', 'ejs');
 const firebaseMiddleware = async (req, res, next) => {
 
     try {
-        console.log(`Headers: ${req.headers['authorization']}`);
-        console.log(`Body: ${req.body}`);
         const idToken = req.headers['authorization'].split(" ")[1];
         const verifiedToken = await firebase.auth().verifyIdToken(idToken.toString());
         req.body.idToken = verifiedToken.uid;
@@ -114,62 +112,70 @@ server.post('/find-jobs', async (req, res) => {
 
 
 server.post('/create-job', firebaseMiddleware, async (req, res) => {
-    const { title, companyname, type, benefits, salary, qualifications, description, location } = req.body;
-
-    if (!title && !companyname && !type && !benefits && !salary && !qualifications && !description && !location) {
-        res.end("Missing required variables")
-        return;
-    }
-
-    if (typeof title != 'string'
-
-        &&
-        typeof companyname != 'string'
-
-        &&
-        typeof location != 'string'
-
-        &&
-        typeof type != 'string'
-
-        &&
-        typeof benefits != 'string'
-
-        &&
-        typeof salary != 'string'
-
-        &&
-        typeof qualifications != 'string'
-
-        &&
-        typeof description != 'string') {
-        res.end("All variables need to be in string format");
-    }
-    const newSalary = parseFloat(salary);
-    const newJob = {
-        title,
-        companyname,
-        type,
-        benefits,
-        salary,
-        qualifications,
-        description,
-        location
-    }
-
     try {
+        const { title, companyname, type, benefits, salary, qualifications, description, location } = req.body;
+        const vars = [title, companyname, type, benefits, salary, qualifications, description, location];
+
+        let i = 0;
+        for (const val of vars) {
+            if (!val) {
+                res.end(`Variable ${i} is missing`);
+                return;
+            }
+
+            if (typeof val !== 'string') {
+                res.end(`Variable ${i} should be a string`);
+                return;
+            }
+            i++;
+        }
+
+        // if (title && companyname && type && benefits && salary && qualifications && description && location) {
+        //     if (typeof title != 'string'
+
+        //         &&
+        //         typeof companyname != 'string'
+
+        //         &&
+        //         typeof location != 'string'
+
+        //         &&
+        //         typeof type != 'string'
+
+        //         &&
+        //         typeof benefits != 'string'
+
+        //         &&
+        //         typeof salary != 'string'
+
+        //         &&
+        //         typeof qualifications != 'string'
+
+        //         &&
+        //         typeof description != 'string') {
+        //         res.end("All variables need to be in string format");
+        //     }
+        const newSalary = parseFloat(salary);
+        const newJob = {
+            title,
+            companyname,
+            type,
+            benefits,
+            salary,
+            qualifications,
+            description,
+            location
+        }
+
+
         await mongo.jobDb.addJobListing(newJob);
         //creates job based on form inputs post validation
-        res.send(JSON.stringify({
-            "status": "success"
-        }));
+        res.send(JSON.stringify({ "status": "success" }));
     } catch (err) {
         res.sendStatus(500);
         return console.error(err);
     }
 });
-
-
 
 /*
  *
