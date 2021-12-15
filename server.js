@@ -81,7 +81,7 @@ server.get('/favorites', firebaseMiddleware, async (req, res) => {
     }
 });
 
-server.post('/find-jobs', async(req, res) => {
+server.post('/find-jobs', async (req, res) => {
     //returns all jobs by search term or if empty, returns all jobs. Will not return jobs that are ignored!
     const { location, title, jobId } = req.body;
     let search;
@@ -112,62 +112,37 @@ server.post('/find-jobs', async(req, res) => {
 
 
 server.post('/create-job', firebaseMiddleware, async (req, res) => {
-    const { title, company, type, benefits, salary, qualifications, description, location } = req.body;
-
-    if (!title && !company && !type && !benefits && !salary && !qualifications && !description && !location) {
-        res.end("Missing required variables")
-        return;
-    }
-
-    if (typeof title != 'string'
-
-        &&
-        typeof company != 'string'
-
-        &&
-        typeof location != 'string'
-
-        &&
-        typeof type != 'string'
-
-        &&
-        typeof benefits != 'string'
-
-        &&
-        typeof salary != 'string'
-
-        &&
-        typeof qualifications != 'string'
-
-        &&
-        typeof description != 'string') {
-        res.end("All variables need to be in string format");
-    }
-    const newSalary = parseFloat(salary);
-    const newJob = {
-        title: title,
-        company: company,
-        type: type,
-        benefits: benefits,
-        salary: newSalary,
-        qualifications: qualifications,
-        description: description,
-        location: location
-    }
-
     try {
+        const { title, companyname, type, benefits, salary, qualifications, description, location } = req.body;
+        const vars = [title, companyname, type, benefits, salary, qualifications, description, location];
+
+        for (let i = 0; i < vars.length; i++) {
+            let val = vars[i];
+            if (val === undefined) {
+                console.log(`Variable ${i} was undefined`);
+                res.status(400);
+            }
+        }
+
+        const newJob = {
+            title,
+            companyname,
+            type,
+            benefits,
+            salary,
+            qualifications,
+            description,
+            location
+        }
+
         await mongo.jobDb.addJobListing(newJob);
         //creates job based on form inputs post validation
-        res.send(JSON.stringify({
-            "status": "success"
-        }));
+        res.send(JSON.stringify({ "status": "success" }));
     } catch (err) {
+        console.error(err);
         res.sendStatus(500);
-        return console.error(err);
     }
 });
-
-
 
 /*
  *
@@ -177,31 +152,22 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
 
 server.post('/create-user', firebaseMiddleware, async (req, res) => {
     try {
-        const {
-            idToken,
-            salary
-        } = req.body;
-        let newSalary = parseFloat(salary);
-        if (typeof newSalary != "number" && newSalary < 0) {
-            res.send("Salary must be a number greater than 0.")
-            return;
-        }
+        const { idToken } = req.body;
 
         // First check if the user exists
         let existingUser = await mongo.userDb.getUserProfile(idToken);
-        if (existingUser) {
+        if (existingUser.length > 0) {
             console.log('User exists already - avoiding duplicate insertion')
             return;
         } else {
             console.log('THe user did not exist')
         }
 
-        console.log("/create user function");
         const userObj = {
             ignored: [],
             favorites: [],
             applied: [],
-            desiredsalary: newSalary,
+            desiredsalary: 50000,
             idToken: idToken
         }
 

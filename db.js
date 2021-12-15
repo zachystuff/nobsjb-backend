@@ -84,7 +84,6 @@ const userDb = {
             let result = await userCollecton.find({
                 idToken: user
             }).toArray();
-            console.log(result);
             return result;
         } catch (error) {
             throw new Error(error);
