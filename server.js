@@ -113,7 +113,6 @@ server.post('/find-jobs', async (req, res) => {
 
 server.post('/create-job', firebaseMiddleware, async (req, res) => {
     try {
-        console.log(req.body);
         const { title, companyname, type, benefits, salary, qualifications, description, location } = req.body;
         const vars = [title, companyname, type, benefits, salary, qualifications, description, location];
 
@@ -125,7 +124,6 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
             }
         }
 
-        const newSalary = parseFloat(salary);
         const newJob = {
             title,
             companyname,
