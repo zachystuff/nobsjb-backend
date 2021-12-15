@@ -119,7 +119,10 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
 
         for (let i = 0; i < vars.length; i++) {
             let val = vars[i];
-            console.log(val)
+            if (val === undefined) {
+                console.log(`Variable ${i} was undefined`);
+                res.status(400);
+            }
         }
 
         const newSalary = parseFloat(salary);
