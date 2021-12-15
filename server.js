@@ -116,21 +116,21 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
         const { title, companyname, type, benefits, salary, qualifications, description, location } = req.body;
         const vars = [title, companyname, type, benefits, salary, qualifications, description, location];
 
-        let i = 0;
-        for (const val of vars) {
-            if (!val) {
-                res.status(400);
-                res.send(`Variable ${i} is missing`);
-                return;
-            }
+        // let i = 0;
+        // for (const val of vars) {
+        //     if (!val) {
+        //         res.status(400);
+        //         res.send(`Variable ${i} is missing`);
+        //         return;
+        //     }
 
-            if (typeof val !== 'string') {
-                res.status(400);
-                res.send(`Variable ${i} should be a string`);
-                return;
-            }
-            i++;
-        }
+        //     if (typeof val !== 'string') {
+        //         res.status(400);
+        //         res.send(`Variable ${i} should be a string`);
+        //         return;
+        //     }
+        //     i++;
+        // }
 
         // if (title && companyname && type && benefits && salary && qualifications && description && location) {
         //     if (typeof title != 'string'
@@ -168,14 +168,13 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
             description,
             location
         }
-
-
+        
         await mongo.jobDb.addJobListing(newJob);
         //creates job based on form inputs post validation
         res.send(JSON.stringify({ "status": "success" }));
     } catch (err) {
+        console.error(err);
         res.sendStatus(500);
-        return console.error(err);
     }
 });
 
