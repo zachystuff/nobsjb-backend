@@ -120,13 +120,13 @@ server.post('/create-job', firebaseMiddleware, async (req, res) => {
         for (const val of vars) {
             if (!val) {
                 res.status(400);
-                res.end(`Variable ${i} is missing`);
+                res.send(`Variable ${i} is missing`);
                 return;
             }
 
             if (typeof val !== 'string') {
                 res.status(400);
-                res.end(`Variable ${i} should be a string`);
+                res.send(`Variable ${i} should be a string`);
                 return;
             }
             i++;
